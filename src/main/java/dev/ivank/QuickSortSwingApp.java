@@ -31,6 +31,22 @@ public class QuickSortSwingApp {
     private static int btnNumber;
     private static List<Integer> btnValues;
 
+    private static final Random RANDOM = new Random();
+
+    private static final int INIT_SCREEN_WIDTH = 500;
+    private static final int INIT_SCREEN_HEIGHT = 300;
+    private static final int MAX_BUTTON_SIZE = 75;
+    private static final int BUTTON_HEIGHT = 25;
+    /**
+     * This should be the number of buttons per column
+     */
+    private static final int BUTTONS_PER_COL = 10;
+    private static final int MAX_RANDOM_VALUE = 1000;
+    private static final int MAX_INPUT_NUMBER = 1000;
+    private static final int MIN_RANDOM_VALUE = 1;
+    private static final int SLEEP_DELAY = 150;
+    private static final int VALUE_THRESHOLD = 30;
+
     public static void main(String[] args) {
         displayIntroScreen();
     }
@@ -53,7 +69,7 @@ public class QuickSortSwingApp {
 
         final JButton jButton = createButton("Enter", e -> {
             btnNumber = Integer.parseInt(textField.getText());
-            if (btnNumber > 0) {
+            if (btnNumber > 0 && btnNumber <= MAX_INPUT_NUMBER) {
                 jFrame.dispose();
                 displaySortScreen(btnNumber);
             }
@@ -80,7 +96,7 @@ public class QuickSortSwingApp {
 
         btnValues = getValues(btnNumber);
 
-        renderValueButtons(btnValues, valuesPanel);
+        renderValueButtons(valuesPanel, btnValues);
 
         final JPanel optionsPanel = new JPanel();
         optionsPanel.setLayout(new BoxLayout(optionsPanel, BoxLayout.Y_AXIS));
@@ -99,8 +115,8 @@ public class QuickSortSwingApp {
         }, Color.GREEN);
 
         sort.setAlignmentX(Component.RIGHT_ALIGNMENT);
-        sort.setMaximumSize(new Dimension(75, 25));
-        sort.setPreferredSize(new Dimension(75, 25));
+        sort.setMaximumSize(new Dimension(MAX_BUTTON_SIZE, BUTTON_HEIGHT));
+        sort.setPreferredSize(new Dimension(MAX_BUTTON_SIZE, BUTTON_HEIGHT));
 
         optionsPanel.add(sort);
 
@@ -108,13 +124,14 @@ public class QuickSortSwingApp {
 
         JButton reset = createButton("Reset", e -> {
             jFrame.dispose();
+            sortWorker.cancel(true);
             btnValues.clear();
             displayIntroScreen();
         }, Color.GREEN);
 
         reset.setAlignmentX(Component.RIGHT_ALIGNMENT);
-        reset.setMaximumSize(new Dimension(75, 25));
-        reset.setPreferredSize(new Dimension(75, 25));
+        reset.setMaximumSize(new Dimension(MAX_BUTTON_SIZE, BUTTON_HEIGHT));
+        reset.setPreferredSize(new Dimension(MAX_BUTTON_SIZE, BUTTON_HEIGHT));
 
         optionsPanel.add(reset);
 
@@ -125,64 +142,71 @@ public class QuickSortSwingApp {
         mainPanel.add(optionsPanel);
 
         jFrame.add(mainPanel);
+        jFrame.pack(); // Screen resizes to the space occupied by generated btns
         jFrame.setVisible(true);
     }
+    
+    private static void renderValueButtons(JPanel valuesPanel, List<Integer> values) {
+        renderValueButtons(valuesPanel, values, values);
+    }
 
-    private static void renderValueButtons(List<Integer> values, JPanel valuesPanel) {
+    private static void renderValueButtons(JPanel valuesPanel, List<Integer> values, List<Integer> originalValues) {
         valuesPanel.removeAll();
 
-        final int BUTTONS_PER_ROW = 10;
+        final int numChunks = (int) Math.ceil((double) values.size() / BUTTONS_PER_COL);
 
-        for (int i = 0; i < values.size(); i += BUTTONS_PER_ROW) {
-            final JPanel panel = new JPanel();
-            panel.setLayout(new GridLayout(BUTTONS_PER_ROW, 1));
+        for (int i = 0; i < numChunks; i ++) {
+            final JPanel panel = new JPanel(new GridLayout(BUTTONS_PER_COL, 1));
             panel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-            final int toIndex = Math.min(i + BUTTONS_PER_ROW, values.size());
+            int startIndex = i * BUTTONS_PER_COL;
+            int endIndex = Math.min(startIndex + BUTTONS_PER_COL, values.size());
 
-            values.subList(i, toIndex).stream().map(val -> {
-                final JButton button = new JButton(val.toString());
-                button.setBackground(Color.BLUE);
-                button.setForeground(Color.WHITE);
-                button.addActionListener(e -> {
-                    if (val <= 30) {
-                        List<Integer> newNumbers = getValues(btnNumber);
+            for (int j = startIndex; j < endIndex; j ++) {
+                Integer value = values.get(j);
+                Integer originalValue = originalValues.get(j);
 
-                        btnValues.addAll(newNumbers);
-
-                        renderValueButtons(btnValues, valuesPanel);
-
-                        valuesPanel.revalidate();
-                        valuesPanel.repaint();
-                    } else {
-                        JOptionPane.showMessageDialog(null,
-                                "Please select a value smaller or equal to 30.",
-                                "Invalid Selection",
-                                JOptionPane.WARNING_MESSAGE);
-                    }
-                });
-                return button;
-            }).forEach(panel::add);
-
+                JButton button = getValueButton(valuesPanel, value, originalValue);
+                panel.add(button);
+            }
             valuesPanel.add(panel);
         }
+        valuesPanel.revalidate();
+        valuesPanel.repaint();
+    }
+
+    private static JButton getValueButton(JPanel valuesPanel, Integer value, Integer originalValue) {
+        JButton button = new JButton(value.toString());
+        button.setBackground(value.equals(originalValue) ? Color.BLUE : Color.RED);
+        button.setForeground(Color.WHITE);
+        button.addActionListener(e -> {
+            if (value <= VALUE_THRESHOLD) {
+                btnValues = getValues(btnNumber);
+                renderValueButtons(valuesPanel, btnValues, btnValues);
+            } else {
+                JOptionPane.showMessageDialog(null,
+                        "Please select a value smaller or equal to 30.",
+                        "Invalid Selection",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        return button;
     }
 
     private static List<Integer> getValues(int btnNumber) {
-        final Random random = new Random();
         final List<Integer> numbers = new ArrayList<>();
         boolean hasValueLessThanOrEqualTo30 = false;
 
         for (int i = 0; i < btnNumber; i ++) {
-            final int value = random.nextInt(1000) + 1;
-            if (value <= 30) {
+            final int value = RANDOM.nextInt(MAX_RANDOM_VALUE) + MIN_RANDOM_VALUE;
+            if (value <= VALUE_THRESHOLD) {
                 hasValueLessThanOrEqualTo30 = true;
             }
             numbers.add(value);
         }
 
         if (!hasValueLessThanOrEqualTo30) {
-            numbers.set(random.nextInt(btnNumber), random.nextInt(30) + 1);
+            numbers.set(RANDOM.nextInt(btnNumber), RANDOM.nextInt(VALUE_THRESHOLD) + MIN_RANDOM_VALUE);
         }
 
         return numbers;
@@ -206,20 +230,21 @@ public class QuickSortSwingApp {
 
     private static JFrame createJFrame() {
         final JFrame jFrame = new JFrame("Numbers Quicksort Swing app");
-        jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        jFrame.setSize(500, 300);
-        // jFrame.setResizable(false);
+        jFrame.setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        jFrame.setSize(INIT_SCREEN_WIDTH, INIT_SCREEN_HEIGHT);
         jFrame.setLocationRelativeTo(null);
         return jFrame;
     }
 
     private static class SortWorker extends SwingWorker<Void, List<Integer>> {
         private final List<Integer> values;
+        private List<Integer> originalValues;
         private final JPanel valuesPanel;
         private final boolean isIncreasing;
 
         public SortWorker(List<Integer> values, JPanel valuesPanel, boolean isIncreasing) {
             this.values = values;
+            this.originalValues = new ArrayList<>(values);
             this.valuesPanel = valuesPanel;
             this.isIncreasing = isIncreasing;
         }
@@ -227,6 +252,10 @@ public class QuickSortSwingApp {
         @Override
         protected Void doInBackground() {
             quickSort(values, 0, values.size() - 1, isIncreasing);
+            JOptionPane.showMessageDialog(null,
+                    "Sorting numbers has finished.",
+                    "QuickSort",
+                    JOptionPane.INFORMATION_MESSAGE);
             return null;
         }
 
@@ -236,14 +265,14 @@ public class QuickSortSwingApp {
                 publish(new ArrayList<>(list));
                 try {
                     // A little delay for visualization purposes
-                    Thread.sleep(150);
+                    Thread.sleep(SLEEP_DELAY);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
                 quickSort(list, low, pi - 1, isIncreasing);
                 publish(new ArrayList<>(list));
                 try {
-                    Thread.sleep(150);
+                    Thread.sleep(SLEEP_DELAY);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -277,7 +306,8 @@ public class QuickSortSwingApp {
         }
 
         private void updateButtons(List<Integer> updatedValues) {
-            renderValueButtons(updatedValues, valuesPanel);
+            renderValueButtons(valuesPanel, updatedValues, originalValues);
+            originalValues = updatedValues;
             valuesPanel.revalidate();
             valuesPanel.repaint();
         }
