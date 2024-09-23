@@ -129,7 +129,9 @@ public class QuickSortSwingApp {
 
         JButton reset = createButton("Reset", e -> {
             jFrame.dispose();
-            sortWorker.cancel(true);
+            if (sortWorker != null) {
+                sortWorker.cancel(true);
+            }
             btnValues.clear();
             displayIntroScreen();
         }, Color.GREEN);
@@ -147,7 +149,7 @@ public class QuickSortSwingApp {
         mainPanel.add(optionsPanel);
 
         jFrame.add(mainPanel);
-        jFrame.pack(); // Screen resizes to the space occupied by generated btns
+        // jFrame.pack(); // Screen resizes to the space occupied by generated btns
         jFrame.setVisible(true);
     }
     
