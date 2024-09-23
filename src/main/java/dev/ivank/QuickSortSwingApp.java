@@ -7,6 +7,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
 import javax.swing.text.AttributeSet;
@@ -98,6 +99,10 @@ public class QuickSortSwingApp {
 
         renderValueButtons(valuesPanel, btnValues);
 
+        final JScrollPane scrollPane = new JScrollPane(valuesPanel);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+
         final JPanel optionsPanel = new JPanel();
         optionsPanel.setLayout(new BoxLayout(optionsPanel, BoxLayout.Y_AXIS));
         optionsPanel.setPreferredSize(new Dimension(120, 100));
@@ -137,7 +142,7 @@ public class QuickSortSwingApp {
 
         optionsPanel.add(Box.createVerticalGlue());
 
-        mainPanel.add(valuesPanel);
+        mainPanel.add(scrollPane);
         mainPanel.add(Box.createHorizontalGlue());
         mainPanel.add(optionsPanel);
 
