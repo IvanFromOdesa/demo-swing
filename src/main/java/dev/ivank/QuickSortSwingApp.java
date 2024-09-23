@@ -149,7 +149,7 @@ public class QuickSortSwingApp {
         mainPanel.add(optionsPanel);
 
         jFrame.add(mainPanel);
-        // jFrame.pack(); // Screen resizes to the space occupied by generated btns
+        jFrame.pack(); // Screen resizes to the space occupied by generated btns
         jFrame.setVisible(true);
     }
     
